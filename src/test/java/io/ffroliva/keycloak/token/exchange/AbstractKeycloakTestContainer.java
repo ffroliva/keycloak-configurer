@@ -4,18 +4,14 @@ import dasniko.testcontainers.keycloak.KeycloakContainer;
 import lombok.extern.slf4j.Slf4j;
 import org.keycloak.admin.client.Keycloak;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.context.TestConfiguration;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Import;
-import org.springframework.context.annotation.Primary;
-import org.springframework.web.client.RestClient;
+import org.springframework.test.context.DynamicPropertyRegistry;
+import org.springframework.test.context.DynamicPropertySource;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 @Slf4j
 @Testcontainers
 @SpringBootTest
-@Import(AbstractKeycloakTestContainer.KeycloakConfigTestConfiguration.class)
 public class AbstractKeycloakTestContainer {
 
     @Container
@@ -34,22 +30,12 @@ public class AbstractKeycloakTestContainer {
         log.info("Keycloak URL: {}", keycloakContainer.getAuthServerUrl());
     }
 
-    @TestConfiguration
-    public static class KeycloakConfigTestConfiguration {
-        @Bean
-        @Primary
-        public Keycloak keycloak() {
-            return keycloak;
-        }
-
-        @Bean
-        @Primary
-        public RestClient restClient() {
-            return RestClient.builder()
-                    .baseUrl(keycloakContainer.getAuthServerUrl())
-                    .build();
-        }
+    @DynamicPropertySource
+    static void registerPgProperties(DynamicPropertyRegistry registry) {
+        registry.add("keycloak.auth-url", () -> keycloakContainer.getAuthServerUrl());
     }
+
+
 }
 
 
