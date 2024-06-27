@@ -6,11 +6,8 @@ import org.keycloak.admin.client.resource.RealmResource;
 import org.keycloak.admin.client.resource.ScopePermissionResource;
 import org.keycloak.representations.idm.ClientRepresentation;
 import org.keycloak.representations.idm.ManagementPermissionReference;
-import org.keycloak.representations.idm.authorization.ClientPolicyRepresentation;
 import org.keycloak.representations.idm.authorization.PolicyRepresentation;
-import org.keycloak.representations.idm.authorization.ResourceServerRepresentation;
 import org.keycloak.representations.idm.authorization.ScopePermissionRepresentation;
-import org.keycloak.representations.idm.authorization.ScopeRepresentation;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -18,13 +15,10 @@ import java.util.List;
 @Service
 public class TokenExchangeService {
 
-
     private final Keycloak keycloak;
-    private final KeycloakClient keycloakClient;
 
-    public TokenExchangeService(Keycloak keycloak, KeycloakClient keycloakClient) {
+    public TokenExchangeService(Keycloak keycloak) {
         this.keycloak = keycloak;
-        this.keycloakClient = keycloakClient;
     }
 
     public void configureInternalToInternalTokenExchange(RealmName realmName, OriginalClient originalClient, TargetClient targetClient) {
@@ -42,16 +36,17 @@ public class TokenExchangeService {
         // Enable permissions for client1
         enableClientServiceAccounts(targetClientResource);
         // Management permissions contain token-exchange permission created when feature is enabled
-        ManagementPermissionReference mpr = realmManagerManager.enableFineGrainedPermissions(true);
+        ManagementPermissionReference mpr = realmManagerManager.setFineGrainedPermissions(true);
 
         // Enable authorization services for realmName-management client
         enableAuthorizationServices(originalClientResource);
 
         //create policy
         PolicyRepresentation policyRepresentation = targetClientManager.getTokenExchangePolicyOrElseCreate();
+
         // Update permission with created policy
-        configureTokenExchangePermission( realmResource, targetClientResource, policyRepresentation, mpr);
-        //configureTokenExchangePermission(realmResource, targetClientResource, originalClientResource, tokenExchangePolicy);
+        configureTokenExchangePermission(realmResource, targetClientResource, policyRepresentation, mpr);
+
     }
 
     private void enableClientServiceAccounts(ClientResource clientResource) {
@@ -60,14 +55,7 @@ public class TokenExchangeService {
         clientResource.update(client);
     }
 
-
     private void enableAuthorizationServices(ClientResource clientResource) {
-        ClientRepresentation client = clientResource.toRepresentation();
-        client.setAuthorizationServicesEnabled(true);
-        clientResource.update(client);
-    }
-
-    private void enableRealmManagementAuthorizationServices(ClientResource clientResource) {
         ClientRepresentation client = clientResource.toRepresentation();
         client.setAuthorizationServicesEnabled(true);
         clientResource.update(client);
@@ -79,7 +67,7 @@ public class TokenExchangeService {
         String policyId = policyRepresentation.getId();
         String permissionId = managementPermissionReference.getScopePermissions().get("token-exchange");
         ScopePermissionResource permissionResource = targetClientResource.authorization().permissions().scope().findById(permissionId);
-        ScopePermissionRepresentation permission =  permissionResource.toRepresentation();
+        ScopePermissionRepresentation permission = permissionResource.toRepresentation();
 
         permission.addPolicy(policyId); // update the permission with the client policy
 
@@ -91,7 +79,6 @@ public class TokenExchangeService {
         settings.setPolicies(policies);
         targetClientResource.authorization().update(settings);
 
-
         var rmcm = new RealmManagementClientManager(keycloak, new RealmName(realmResource.toRepresentation().getRealm()));
         var realmManagementResource = rmcm.getClientResource();
         var realmManagementSettings = realmManagementResource.authorization().getSettings();
@@ -100,11 +87,6 @@ public class TokenExchangeService {
 
     }
 
-    private String getTokenExchangeScopeId(ClientResource clientResource) {
-        return clientResource.authorization().scopes()
-                .findByName("token-exchange")
-                .getId();
-    }
 
     RealmResource getRealmResourceByRealName(RealmName realmName) {
         var realmRepresentation = keycloak.realms().findAll().stream()
@@ -129,18 +111,5 @@ public class TokenExchangeService {
                 .stream()
                 .findFirst()
                 .orElseThrow(() -> new RuntimeException("Client on realm %s not found: %s".formatted(realmResource.toRepresentation().getRealm(), clientId)));
-    }
-
-    private void ensureTokenExchangeScopeExists(ClientResource clientResource) {
-        String scopeName = "token-exchange";
-        List<ScopeRepresentation> scopes = clientResource.authorization().scopes().scopes();
-
-        boolean scopeExists = scopes.stream().anyMatch(scope -> scopeName.equals(scope.getName()));
-
-        if (!scopeExists) {
-            ScopeRepresentation tokenExchangeScope = new ScopeRepresentation();
-            tokenExchangeScope.setName(scopeName);
-            clientResource.authorization().scopes().create(tokenExchangeScope);
-        }
     }
 }

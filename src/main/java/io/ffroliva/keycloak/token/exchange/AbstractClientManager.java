@@ -45,7 +45,7 @@ public abstract class AbstractClientManager {
                 .orElseThrow(() -> new KeycloakAdminClientException(MessageFormat.format("{} not found.", clientId.getId())));
     }
 
-    ManagementPermissionReference enableFineGrainedPermissions(boolean enable) {
+    ManagementPermissionReference setFineGrainedPermissions(boolean enable) {
         return clientResource.setPermissions(new ManagementPermissionRepresentation(enable));
     }
 

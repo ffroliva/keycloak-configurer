@@ -2,12 +2,7 @@ package io.ffroliva.keycloak.token.exchange;
 
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
-import org.keycloak.admin.client.Keycloak;
 import org.keycloak.representations.idm.ManagementPermissionReference;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-
-import static io.ffroliva.keycloak.token.exchange.TokenExchangeConstants.REALM_MANAGEMENT_CLIENT;
 
 class ClientManagerTest extends AbstractKeycloakTestContainer {
 
@@ -23,7 +18,7 @@ class ClientManagerTest extends AbstractKeycloakTestContainer {
 
         RealmManagementClientManager realmManagementManager = new RealmManagementClientManager(keycloak, TEST_REALM);
         // enables
-        ManagementPermissionReference managementPermissionReference = realmManagementManager.enableFineGrainedPermissions(true); // gives 404 error
+        ManagementPermissionReference managementPermissionReference = realmManagementManager.setFineGrainedPermissions(true); // gives 404 error
 
         var realManagementResource = KeycloakHelper.getClientResource(realmResource, REALM_MANAGEMENT_CLIENT_ID);
 
@@ -42,10 +37,10 @@ class ClientManagerTest extends AbstractKeycloakTestContainer {
 
         var testClientManagementManager = new DefaultClientManager(keycloak, TEST_REALM, TARGET_CLIENT_ID);
 
-        testClientManagementManager.enableFineGrainedPermissions(false);
+        testClientManagementManager.setFineGrainedPermissions(false);
         Assertions.assertThat(testClientResource.getPermissions().isEnabled()).isFalse(); // assert that the permissions is false
 
-        ManagementPermissionReference mpr = testClientManagementManager.enableFineGrainedPermissions(true);
+        ManagementPermissionReference mpr = testClientManagementManager.setFineGrainedPermissions(true);
         Assertions.assertThat(testClientResource.getPermissions().isEnabled()).isTrue(); // verify that the permissions has been updated
         Assertions.assertThat(mpr).isNotNull();
 
@@ -60,8 +55,8 @@ class ClientManagerTest extends AbstractKeycloakTestContainer {
         var testClientManagementManager = new DefaultClientManager(keycloak, TEST_REALM, TARGET_CLIENT_ID);
 
 
-        ManagementPermissionReference mpr1 = testClientManagementManager.enableFineGrainedPermissions(true);
-        ManagementPermissionReference mpr2 = testClientManagementManager.enableFineGrainedPermissions(true); // has no side effect
+        ManagementPermissionReference mpr1 = testClientManagementManager.setFineGrainedPermissions(true);
+        ManagementPermissionReference mpr2 = testClientManagementManager.setFineGrainedPermissions(true); // has no side effect
         Assertions.assertThat(mpr1.getResource()).isEqualTo(mpr2.getResource());
         Assertions.assertThat(mpr1.getScopePermissions().get("token-exchange")).isEqualTo(mpr2.getScopePermissions().get("token-exchange")); // should have same key
 

@@ -52,23 +52,18 @@ class TokenExchangeServiceIT extends AbstractKeycloakTestContainer {
                 .serverUrl(properties.getAuthUrl())
                 .build();
 
-
     }
 
-    /**
-     * This test depends on having keycloak running externaly using docker-compose.yaml
-     * avaiable in the project root directory.
-     * It ideia is to
-     */
     @Test
     void shouldConfigureInternalToInternalTokenExchange() throws VerificationException {
 
         // given
-        RealmName realmName = new RealmName(properties.getRealm());
+        RealmName realmName = new RealmName(properties.getRealm()); // real name defined in application.properties
         OriginalClient originalClient = new OriginalClient("original");
         TargetClient targetClient = new TargetClient("target");
         RealmManagementClient realmManagementClient = new RealmManagementClient("realm-management");
         ClientSecret clientSecret = new ClientSecret("123456");
+
 
         var realmResource = KeycloakHelper.getRealmOrElseCreate(keycloak.realms(), realmName);
 
@@ -77,13 +72,13 @@ class TokenExchangeServiceIT extends AbstractKeycloakTestContainer {
         var targetClientRepresentation = KeycloakHelper.getClientResourceByClientIdOrElseCreate(keycloak, realmName, targetClient, clientSecret);
 
         Assertions.assertThat(originalClientRepresentation).isNotNull();
-        Assertions.assertThat(originalClientRepresentation).isNotNull();
+        Assertions.assertThat(targetClientRepresentation).isNotNull();
 
         // create users
         properties.getUsers().forEach((username, user) -> KeycloakHelper.createUser(keycloak, realmName, user));
 
         // when
-        TokenExchangeService tokenExchangeService = new TokenExchangeService(keycloak, keycloakClient);
+        TokenExchangeService tokenExchangeService = new TokenExchangeService(keycloak);
         tokenExchangeService.configureInternalToInternalTokenExchange(realmName, originalClient, targetClient);
         // then
 
