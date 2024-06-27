@@ -1,2 +1,6 @@
-# keycloak-token-exchange-configurer
-Programmatically configure token exchange in keycloak
+# Keycloak Configurer
+
+This project provides a convenient way to programmatically keycloak.
+
+## Token Exchange configuration service
+
